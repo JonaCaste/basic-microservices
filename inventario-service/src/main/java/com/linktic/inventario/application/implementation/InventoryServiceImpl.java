@@ -3,6 +3,7 @@ package com.linktic.inventario.application.implementation;
 import com.linktic.inventario.application.interfaces.IInventoryService;
 import com.linktic.inventario.domain.dto.InventoryDTO;
 import com.linktic.inventario.domain.dto.ProductDTO;
+import com.linktic.inventario.domain.dto.PurchaseResponseDTO;
 import com.linktic.inventario.domain.entity.Inventory;
 import com.linktic.inventario.infrastructure.InventoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,6 +102,40 @@ public class InventoryServiceImpl implements IInventoryService {
         } catch (Exception e) {
             logger.severe(e.getMessage());
             throw new RuntimeException(String.format("Error al actualizar el inventario del producto con ID: %s ", productId), e);
+        }
+    }
+
+
+    @Override
+    public PurchaseResponseDTO purchaseProduct(Long productId, int quantity) {
+        try {
+            ProductDTO productDTO = fetchProduct(productId);
+            if (productDTO == null) {
+                throw new NoSuchElementException("No se encontro el producto con ID: " + productId);
+            }
+
+            Inventory inventory = inventoryRepository.findByProductId(productId)
+                    .orElseThrow(() -> new NoSuchElementException("No se encontro el inventario para el producto con ID: " + productId));
+
+            if (inventory.getQuantity() < quantity) {
+                throw new IllegalArgumentException("Inventario insuficiente para el producto con ID: " + productId);
+            }
+
+            inventory.setQuantity(inventory.getQuantity() - quantity);
+            inventoryRepository.save(inventory);
+
+            return new PurchaseResponseDTO(
+                    productDTO.getId(),
+                    productDTO.getName(),
+                    quantity,
+                    inventory.getQuantity()
+            );
+        } catch (NoSuchElementException | IllegalArgumentException e) {
+            logger.severe(e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.severe("Error interno en la compra del producto: " + e.getMessage());
+            throw new RuntimeException("Error interno en la compra del producto", e);
         }
     }
 
