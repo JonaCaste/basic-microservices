@@ -3,6 +3,7 @@ package com.linktic.inventario;
 import com.linktic.inventario.application.implementation.InventoryServiceImpl;
 import com.linktic.inventario.domain.dto.InventoryDTO;
 import com.linktic.inventario.domain.dto.ProductDTO;
+import com.linktic.inventario.domain.dto.PurchaseResponseDTO;
 import com.linktic.inventario.domain.entity.Inventory;
 import com.linktic.inventario.infrastructure.InventoryRepository;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ public class InventoryServiceTest {
 
     @Mock
     private InventoryRepository inventoryRepository;
+
 
 
     /**
@@ -155,6 +157,106 @@ public class InventoryServiceTest {
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> inventoryService.updateQuantity(productId, 10));
         assertTrue(ex.getMessage().contains("Error al actualizar"));
+    }
+
+
+    /**
+     * Purchase test
+     */
+
+    @Test
+    void testPurchaseSuccess() {
+
+        int quantity = 50;
+        int purchaseQuantity = 10;
+
+        Long productId = 1L;
+        ProductDTO mockProduct = new ProductDTO(productId, "Producto test purchase", 15000.0, "Descripcion");
+        Inventory mockInventory = new Inventory(null, productId, quantity);
+
+        ResponseEntity<ProductDTO> responseEntity = new ResponseEntity<>(mockProduct, HttpStatus.OK);
+
+        when(restTemplate.exchange(
+                anyString(),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                eq(ProductDTO.class)
+        )).thenReturn(responseEntity);
+
+        Mockito.when(inventoryRepository.findByProductId(productId)).thenReturn(Optional.of(mockInventory));
+        Mockito.when(inventoryRepository.save(any())).thenReturn(mockInventory);
+
+        PurchaseResponseDTO result = inventoryService.purchaseProduct(productId, purchaseQuantity);
+
+        assertEquals(productId, result.getProductId());
+        assertEquals((quantity - purchaseQuantity), result.getRemainingQuantity());
+        assertEquals("Producto test purchase", result.getProductName());
+    }
+
+    @Test
+    void testProductNotFound() {
+        Long productId = 1L;
+        ProductDTO mockProduct = new ProductDTO(productId, "Producto test inventario", 15000.0, "Descripcion");
+
+        ResponseEntity<ProductDTO> responseEntity = new ResponseEntity<>(null, HttpStatus.valueOf(204));
+
+        when(restTemplate.exchange(
+                anyString(),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                eq(ProductDTO.class)
+        )).thenReturn(responseEntity);
+
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> inventoryService.purchaseProduct(productId, 1));
+
+        assertEquals("No se encontro el producto con ID: " + productId, exception.getMessage());
+    }
+
+    @Test
+    void testInsufficientInventory() {
+        int quantity = 5;
+        int purchaseQuantity = 10;
+
+        Long productId = 1L;
+        ProductDTO mockProduct = new ProductDTO(productId, "Producto test purchase", 15000.0, "Descripcion");
+        Inventory mockInventory = new Inventory(null, productId, quantity);
+
+        ResponseEntity<ProductDTO> responseEntity = new ResponseEntity<>(mockProduct, HttpStatus.OK);
+
+        when(restTemplate.exchange(
+                anyString(),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                eq(ProductDTO.class)
+        )).thenReturn(responseEntity);
+
+        Mockito.when(inventoryRepository.findByProductId(productId)).thenReturn(Optional.of(mockInventory));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> inventoryService.purchaseProduct(productId, purchaseQuantity));
+
+        assertEquals("Inventario insuficiente para el producto con ID: " + productId, exception.getMessage());
+    }
+
+    @Test
+    void testInternalServerError() {
+        Long productId = 1L;
+        ProductDTO mockProduct = new ProductDTO(productId, "Producto test purchase", 15000.0, "Descripcion");
+
+        ResponseEntity<ProductDTO> responseEntity = new ResponseEntity<>(mockProduct, HttpStatus.OK);
+
+        when(restTemplate.exchange(
+                anyString(),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                eq(ProductDTO.class)
+        )).thenReturn(responseEntity);
+
+        when(inventoryRepository.findByProductId(productId)).thenThrow(new RuntimeException("DB error"));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> inventoryService.purchaseProduct(productId, 10));
+        assertTrue(ex.getMessage().contains("Error interno en la compra del producto"));
     }
 
 }
