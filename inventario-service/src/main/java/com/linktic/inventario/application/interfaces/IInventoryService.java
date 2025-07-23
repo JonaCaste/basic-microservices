@@ -6,13 +6,6 @@ import com.linktic.inventario.domain.dto.ProductDTO;
 public interface IInventoryService {
 
     /**
-     * Get product from microservice
-     * @param id   porduct id
-     * @return      product
-     */
-//    ProductDTO fetchProduct(Long id);
-
-    /**
      * get quantity of the product from inventory
      * @param productId     product id
      * @return              quantity

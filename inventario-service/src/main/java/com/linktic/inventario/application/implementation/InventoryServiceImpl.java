@@ -36,6 +36,11 @@ public class InventoryServiceImpl implements IInventoryService {
     @Autowired
     private RestTemplate restTemplate;
 
+    /**
+     * Get product from microservice
+     * @param id   porduct id
+     * @return      product
+     */
     private ProductDTO fetchProduct(Long id) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("x-api-key", apiKey);
@@ -51,7 +56,12 @@ public class InventoryServiceImpl implements IInventoryService {
                 ProductDTO.class
         );
 
-       ProductDTO productDTO = response.getBody();
+
+        if(response == null) return null;
+
+        ProductDTO productDTO = response.getBody();
+
+        if(productDTO == null) return null;
 
         logger.info(String.format("Producto con id %s obtenido del servicio %s: %s", id, finalUrl, productDTO.toString()));
 
@@ -63,6 +73,7 @@ public class InventoryServiceImpl implements IInventoryService {
         logger.info(String.format("Obteniendo el inventario del producto %s", productId));
         try {
             ProductDTO productDTO = fetchProduct(productId);
+            if (productDTO == null) throw new NoSuchElementException("No se encontro el producto");
 
             return inventoryRepository.findByProductId(productId)
                     .map(inventory -> new InventoryDTO(inventory.getProductId(), inventory.getQuantity(), productDTO))
