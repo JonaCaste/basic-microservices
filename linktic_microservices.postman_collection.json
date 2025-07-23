@@ -80,7 +80,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"name\": \"producto prueba 1\",\r\n    \"price\": \"10000\",\r\n    \"description\": \"Descripcion de prueba\"\r\n}",
+					"raw": "{\r\n    \"name\": \"producto prueba 2\",\r\n    \"price\": 20000.00,\r\n    \"description\": \"Descripcion de prueba\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -171,7 +171,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://127.0.0.1:9090/api/v1/inventory/quantity/1?quantity=10",
+					"raw": "http://127.0.0.1:9090/api/v1/inventory/quantity/1?quantity=15",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -190,7 +190,7 @@
 					"query": [
 						{
 							"key": "quantity",
-							"value": "10"
+							"value": "15"
 						}
 					]
 				}

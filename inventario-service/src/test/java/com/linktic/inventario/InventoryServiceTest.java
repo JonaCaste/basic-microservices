@@ -138,16 +138,20 @@ public class InventoryServiceTest {
 
         verify(inventoryRepository).save(argThat(inv -> inv.getQuantity() == 30));
     }
-    @Test
-    void testUpdateQuantityNotFound() {
-        Long productId = 1L;
-        ProductDTO mockProduct = new ProductDTO(productId, "Producto test inventario", 15000.0, "Descripcion");
-
-        when(inventoryRepository.findByProductId(productId)).thenReturn(Optional.empty());
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> inventoryService.updateQuantity(productId, 10));
-        assertTrue(ex.getMessage().contains("No se encontro el inventario"));
-    }
+    /**
+     * It is commented, since the possibility of adding inventory if it does not exist when performing the update action is added to the logic.
+     *
+     */
+//    @Test
+//    void testUpdateQuantityNotFound() {
+//        Long productId = 1L;
+//        ProductDTO mockProduct = new ProductDTO(productId, "Producto test inventario", 15000.0, "Descripcion");
+//
+//        when(inventoryRepository.findByProductId(productId)).thenReturn(Optional.empty());
+//
+//        RuntimeException ex = assertThrows(RuntimeException.class, () -> inventoryService.updateQuantity(productId, 10));
+//        assertTrue(ex.getMessage().contains("No se encontro el inventario"));
+//    }
     @Test
     void testUpdateQuantityServerError() {
         Long productId = 1L;

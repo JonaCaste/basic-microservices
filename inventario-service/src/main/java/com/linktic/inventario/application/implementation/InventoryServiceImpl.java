@@ -92,7 +92,9 @@ public class InventoryServiceImpl implements IInventoryService {
     public void updateQuantity(Long productId, int quantity) {
         logger.info(String.format("Actualizando el inventario del producto %s", productId));
         try {
-            Inventory inventory = inventoryRepository.findByProductId(productId).orElseThrow(NoSuchElementException::new);
+            Inventory inventory = inventoryRepository.findByProductId(productId)
+                    .orElse(new Inventory()); //If no exist inventory, we created it, since it is also adding inventory
+
             inventory.setProductId(productId);
             inventory.setQuantity(quantity);
             inventoryRepository.save(inventory);
