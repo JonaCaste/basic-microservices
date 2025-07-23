@@ -1,5 +1,6 @@
 package com.linktic.inventario;
 
+import com.jayway.jsonpath.JsonPath;
 import com.linktic.inventario.domain.dto.ProductDTO;
 import com.linktic.inventario.domain.entity.Inventory;
 import com.linktic.inventario.infrastructure.InventoryRepository;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -14,12 +16,20 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.util.AssertionErrors.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -47,68 +57,55 @@ public class InventoryIntegrationTest {
 
     private Long testProductId;
     private String testProductName;
+    @Test
+    void testBuyProductEndpoint() throws Exception {
 
-    @BeforeEach
-    void setup() {
-        ProductDTO mockProduct = new ProductDTO(null, "Producto test inventario", 15000.0, "Descripcion");
 
         /**
-         * Error in product persistence in external microservice
+         * TODO create product in microservice
+         * productId hardcode
          */
-        // Crear producto en el microservicio
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.set("x-api-key", apiKey);
-//        HttpEntity<ProductDTO> request = new HttpEntity<>(mockProduct, headers);
-//        String finalUrl = String.format("%s%s", productsMicroserviceUrl, createProductEndpoint);
-//
-//        System.out.println(finalUrl);
-//
-//        ResponseEntity<ProductDTO> response = null;
-//        try {
-//            response = restTemplate.exchange(
-//                    finalUrl,
-//                    HttpMethod.POST,
-//                    request,
-//                    ProductDTO.class
-//            );
-//        } catch (Exception e) {
-//            throw new RuntimeException("Error al crear producto en microservicio", e);
-//        }
-//
-//        if (response == null || response.getBody() == null || !response.getStatusCode().is2xxSuccessful()) {
-//            throw new RuntimeException("No se pudo crear el producto de prueba. Response: " + response);
-//        }
-//
-//        ProductDTO productDTO = response.getBody();
-//
-//        inventoryRepository.save(new Inventory(null, 99L, 50));
-//
-//        testProductId = 99L;
-//        testProductName = "Producto test integration 1";
-    }
+        Long productId = 18L;
+        ProductDTO productDTOReq = new ProductDTO(productId,"Laptop", 1000.0, "Descripcion");
 
-    /**
-     * Error in product persistence in external microservice
-     * @throws Exception
-     */
-//    @Test
-//    void testGetInventoryEndpoint() throws Exception {
-//        mockMvc
-//                .perform(
-//                        get(String.format("/inventory/quantity/%s", testProductId))
-//                                .header("x-api-key", apiKey)
-//                )
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.productId").value(testProductId))
-//                .andExpect(jsonPath("$.quantity").value(50));
-//    }
+        ResponseEntity<ProductDTO> responseEntity = new ResponseEntity<>(productDTOReq, HttpStatus.OK);
+
+        when(restTemplate.exchange(
+                anyString(),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                eq(ProductDTO.class)
+        )).thenReturn(responseEntity);
+
+        mockMvc
+                .perform(put(String.format("/inventory/quantity/%s", productId)) //Dinamyc prop (spring.mvc.servlet.path) is not loaded this
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("quantity", String.valueOf(100))
+                        .header("x-api-key", apiKey))
+                .andExpect(status().isOk());
+
+        String purchaseJson = String.format("{\n" +
+                "            \"productId\": %d, \n" +
+                "            \"quantity\": 50\n" +
+                "        }", productId);
+
+        mockMvc
+                .perform(post("/purchase") //Dinamyc prop (spring.mvc.servlet.path) is not loaded this
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(purchaseJson)
+                        .header("x-api-key", apiKey))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(productId))
+                .andExpect(jsonPath("$.purchasedQuantity").value(50))
+                .andExpect(jsonPath("$.remainingQuantity").value(50));
+    }
 
     @Test
     public void shouldThrowUnauthorized() throws Exception {
 
         mockMvc
                 .perform(
-                        get("/products")    //Dinamyc prop (spring.mvc.servlet.path) is not loaded this
+                        get("/inventory/quantity/1")    //Dinamyc prop (spring.mvc.servlet.path) is not loaded this
                                 .header("x-api-key", "12345-6789")
                 )
                 .andExpect(status().isUnauthorized());
