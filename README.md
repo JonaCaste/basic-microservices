@@ -8,7 +8,7 @@
     * Ingresar a la carpeta del microservicio de inventario con `cd inventario-service`.
         Posteriormente compilamos el proyecto con `mvn clean install -DskipTests`
    
-   #### Nota
+   #### Tests
     * Se compila el proyecto sin pruebas, ya que tenemos propiedades dinámicas (provenientes de docker compose) que generan error.
       Si se necesitan ejecutar las pruebas, se deben descomentar las propiedades de `#dev` del archivo `/resources/application.properties` de cada proyecto; posteriormente se comentan las propiedades dinámicas.
 
